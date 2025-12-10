@@ -21,7 +21,8 @@ export const createCourse = async (req, res) => {
             });
         }
 
-        const newCourse = new Course({ title, description, courseCode, backCover });
+        const backCoverPath = req.files?.backCover?.[0]?.path || backCover;
+        const newCourse = new Course({ title, description, courseCode, backCover: backCoverPath });
         await newCourse.save();
 
         return res.status(201).json({ 
@@ -69,8 +70,8 @@ export const getCourseById = async (req, res) => {
 
 // Update course
 export const updateCourse = async (req, res) => {
-    const { courseId } = res.params;
-    const { courseCode, title, ...otherupdates } = res.body;
+    const { courseId } = req.params;
+    const { courseCode, title, ...otherupdates } = req.body;
     try {
         const course = await Course.findById(courseId);
         if (!course) {
@@ -82,7 +83,12 @@ export const updateCourse = async (req, res) => {
                 return res.status(409).json({ success: false, message: 'Course with this code already exists.' });
             }
         }
-        const updatedCourse = await Course.findByIdAndUpdate(courseId, { courseCode, title, ...otherupdates }, { new: true } );
+        const updateData = { courseCode, title, ...otherupdates };
+        const backCover = req.files?.backCover?.[0]?.path;
+        if (backCover) {
+            updateData.backCover = backCover;
+        }
+        const updatedCourse = await Course.findByIdAndUpdate(courseId, updateData, { new: true } );
         res.status(200).json({ success: true, message: 'Course updated successfully.', data: updatedCourse });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
